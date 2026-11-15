@@ -40,7 +40,7 @@ async function postNote(e,req,path,b){
  if(path==='/api/notes'){
   const kind=str(b,'kind',true,20),body=str(b,'body',true,600),requestId=requestKey(b);
   if(!['comment','feedback','topic'].includes(kind))fail(400,'请选择有效的留言类型。');
-  await insert(e,'note',{id:uuid(),kind,body,created:now(),receipt:uuid().replaceAll('-','').slice(0,14),requestId},true).run();
+  await insert(e,'note',{id:uuid(),kind,body,visible:kind==='comment'?1:0,created:now(),receipt:uuid().replaceAll('-','').slice(0,14),requestId},true).run();
   const row=await one(e,'SELECT kind,body,receipt FROM note WHERE requestId=?',requestId);
   if(!row||row.body!==body||row.kind!==kind)fail(409,'提交编号已使用，请刷新重试。');
   return {receipt:row.receipt};

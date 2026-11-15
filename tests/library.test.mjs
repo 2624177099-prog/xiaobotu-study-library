@@ -196,7 +196,14 @@ test('发布、私有审核、修订、撤回及重启持久化', async t => {
       const first=await load(await post('/api/notes',data))
       assert.equal((await load(await post('/api/notes',data))).receipt,first.receipt)
     }
-    assert.equal((await load(await get('/api/notes?kind=feedback'))).items.length,0)
+    assert.equal((await load(await get('/api/notes?kind=feedback'))).items.length,2)
+    const origin='https://2624177099-prog.github.io';
+    const pageRead=await get('/api/notes',{origin});
+    assert.equal(pageRead.headers.get('Access-Control-Allow-Origin'),origin);
+    assert.equal((await load(pageRead)).items.length,2);
+    const privateMsg=await fetch(host.url+'/api/notes',{method:'POST',headers:{origin,'Content-Type':'application/json'},body:JSON.stringify({kind:'feedback',body:'仅管理员可见',requestId:crypto.randomUUID()})});
+    assert.equal(privateMsg.status,200);
+    assert.equal((await load(await get('/api/notes',{origin}))).items.length,2);
     const rows=(await load(await get('/api/admin/notes',admin))).items
     assert.equal(rows.length,2)
     for(const n of rows)assert.equal(n.tip,0)
@@ -212,7 +219,7 @@ test('发布、私有审核、修订、撤回及重启持久化', async t => {
     for(const row of [ordinary,ordinary,supporter])assert.equal((await load(await post('/api/like',{id:row.id}))).likes,1)
     for(const kind of ['topic','feedback']){
       const notes=(await load(await get('/api/admin/notes?kind='+kind,admin))).items
-      assert.equal(notes.length,1)
+      assert.equal(notes.length,kind==='feedback'?2:1)
       assert.equal((await adminWrite({id:notes[0].id,visible:'yes',amount:'0'})).status,404)
     }
   })

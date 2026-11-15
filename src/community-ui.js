@@ -14,14 +14,15 @@ function noteForm(kind,label,placeholder){
 }
 function installNotes(){
  const node=$('#topicPoll');
- node.innerHTML='<h2>给小博土留言</h2><p class="muted">只写你想说的话。公开留言审核后展示，已核实的打赏留言优先。</p>'+noteForm('comment','公开留言','这份资料帮到了你吗？网站哪里还可以改？')+'<div id="readerNotes"></div><div class="note-grid"><section><h3>下一份想看什么？</h3>'+noteForm('topic','给小博土的选题建议','写下科目、章节，或最想弄懂的一道题')+'</section><section><h3>匿名反馈</h3>'+noteForm('feedback','仅小博土可见','遇到的问题，或想私下说的话')+'</section></div>';
+ node.innerHTML='<h2>给小博土留言</h2><p class="muted">只写你想说的话。公开留言提交后立即展示，已核实的打赏留言优先。</p>'+noteForm('comment','公开留言','这份资料帮到了你吗？网站哪里还可以改？')+'<div id="readerNotes"></div><div class="note-grid"><section><h3>下一份想看什么？</h3>'+noteForm('topic','给小博土的选题建议','写下科目、章节，或最想弄懂的一道题')+'</section><section><h3>匿名反馈</h3>'+noteForm('feedback','仅小博土可见','遇到的问题，或想私下说的话')+'</section></div>';
  for(const form of node.querySelectorAll('.note-form')){
   let requestId=crypto.randomUUID();
   form.oninput=()=>{requestId=crypto.randomUUID();};
   handleForm(form,async data=>{
    const kind=form.dataset.kind,result=await post('/api/notes',{kind,body:data.body,requestId});
    form.reset();requestId=crypto.randomUUID();
-   return kind==='comment'?'已收到，审核后公开。若想让此条留言显示打赏金额，可在打赏备注写下编号 '+result.receipt+'，或凭此编号私下联系小博土核对。':'已送达，仅小博土可见。';
+   if(kind==='comment'){page=0;await loadNotes();}
+   return kind==='comment'?'留言已公开。若想让此条留言显示打赏金额，可在打赏备注写下编号 '+result.receipt+'，或凭此编号私下联系小博土核对。':'已送达，仅小博土可见。';
   });
  }
  let page=0;
@@ -39,7 +40,7 @@ function installNotes(){
 async function noteAdmin(head){
  const kind=qs.get('kind')||'comment',offset=Math.max(0,Number(qs.get('offset'))||0),result=await api('/api/admin/notes?kind='+enc(kind)+'&offset='+offset);
  const link=(k,n=0)=>'/admin?tab=notes&kind='+enc(k)+'&offset='+n;
- main.innerHTML=head+'<section class="panel"><h2>匿名来信</h2><nav class="actions">'+[['comment','公开留言审核'],['topic','选题建议'],['feedback','私密反馈']].map(([k,t])=>'<a class="btn" href="'+link(k)+'">'+t+'</a>').join('')+'</nav>'+result.items.map(n=>'<article class="reader-note"><small>'+formatDate(n.created)+'</small><p>'+escape(n.body)+'</p>'+(kind==='comment'?'<form class="stack" data-id="'+escape(n.id)+'"><small>打赏匹配编号 '+escape(n.receipt)+'</small><label class="field">公开状态<select name="visible"><option value="no">未公开</option><option value="yes"'+(n.visible?' selected':'')+'>公开</option></select></label>'+field('实际到账金额（元，零表示普通留言）','amount',(n.tip/100).toFixed(2),true,'number','min="0" max="999999.99" step="0.01"')+'<label><input name="verified" type="checkbox" value="yes"> 已逐笔核对收款记录、留言编号与金额</label>'+btn('保存','type="submit"')+statusBox()+'</form>':'')+'</article>').join('')+(result.items.length?'':'<p>暂未收到。</p>')+'<div class="actions">'+(offset?'<a href="'+link(kind,Math.max(0,offset-20))+'">上一页</a>':'')+(result.more?'<a href="'+link(kind,offset+20)+'">下一页</a>':'')+'</div></section>';
+ main.innerHTML=head+'<section class="panel"><h2>匿名来信</h2><nav class="actions">'+[['comment','公开留言管理'],['topic','选题建议'],['feedback','私密反馈']].map(([k,t])=>'<a class="btn" href="'+link(k)+'">'+t+'</a>').join('')+'</nav>'+result.items.map(n=>'<article class="reader-note"><small>'+formatDate(n.created)+'</small><p>'+escape(n.body)+'</p>'+(kind==='comment'?'<form class="stack" data-id="'+escape(n.id)+'"><small>打赏匹配编号 '+escape(n.receipt)+'</small><label class="field">公开状态<select name="visible"><option value="no">未公开</option><option value="yes"'+(n.visible?' selected':'')+'>公开</option></select></label>'+field('实际到账金额（元，零表示普通留言）','amount',(n.tip/100).toFixed(2),true,'number','min="0" max="999999.99" step="0.01"')+'<label><input name="verified" type="checkbox" value="yes"> 已逐笔核对收款记录、留言编号与金额</label>'+btn('保存','type="submit"')+statusBox()+'</form>':'')+'</article>').join('')+(result.items.length?'':'<p>暂未收到。</p>')+'<div class="actions">'+(offset?'<a href="'+link(kind,Math.max(0,offset-20))+'">上一页</a>':'')+(result.more?'<a href="'+link(kind,offset+20)+'">下一页</a>':'')+'</div></section>';
  for(const form of main.querySelectorAll('[data-id]'))handleForm(form,data=>post('/api/admin/note',{...data,id:form.dataset.id}).then(()=>undefined));
 }
 function publicCorrections(rows){

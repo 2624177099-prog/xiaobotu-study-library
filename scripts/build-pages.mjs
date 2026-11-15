@@ -36,8 +36,16 @@ try {
  let ui=await (await get('/ui.js')).text();
  ui=replace(ui,"location.pathname.replace(/\\/$/, '') || '/resources'","('/resources/'+(new URLSearchParams(location.search).get('r')||'')).replace(/\\/$/,'')");
  ui=replace(ui,"id => '/resources/'+enc(id)","id => '?r='+enc(id)");
- ui=replace(ui,'const res=await fetch(url,','if(!opt.method){const data=await snapshot; if(url==="/api/catalog")return data.catalog; if(url.startsWith("/api/resource/") && data.details[url.slice(14)])return data.details[url.slice(14)];} throw Object.assign(Error("此资料当前不可用。"),{status:404}); /* const res=await fetch(url,');
- ui=replace(ui,'return data;\n}', 'return data; */\n}');
+ ui=replace(ui,"const res=await fetch(url,",`if(url==='/api/catalog')return (await snapshot).catalog;
+  if(url.startsWith('/api/resource/')){
+   const detail=(await snapshot).details[url.slice(14)];
+   if(!detail)throw Object.assign(Error('资料不可用。'),{status:404});
+   return detail;
+  }
+  if(!/^\\/api\\/(notes|like|rate|ratings)([?]|$)/.test(url))throw Error('该功能需要前往管理后台。');
+  let res;
+  try{res=await fetch('${origin}'+url,`);
+ ui=replace(ui,"...opt});let data;","credentials:'omit',signal:AbortSignal.timeout(12000),...opt});}catch{throw Error('暂时连不上互动服务，请稍后重试。')}let data;");
  ui=replace(ui,"const $ =", "const snapshot=fetch('./catalog.json').then(r=>{if(!r.ok)throw Error('资料目录加载失败，请刷新重试。');return r.json()}); let files={};\nconst $ =");
  ui=replace(ui,"catalog=await api('/api/catalog')","files=(await snapshot).files;catalog=await api('/api/catalog')");
  ui=ui.replaceAll('href="/resources/about"','href="?r=about"').replaceAll('href="/resources/feedback','href="'+origin+'/resources/feedback').replaceAll('href="/resources/submit','href="'+origin+'/resources/submit').replaceAll('href="/resources"','href="./"');
@@ -45,11 +53,14 @@ try {
  ui=replace(ui,"href=\"/file/'+enc(f.id)+'\"","download=\"'+escape(f.name)+'\" href=\"'+escape(files[f.id])+'\"");
  ui=replace(ui,"const u='/preview/'+enc(b.dataset.preview)","const u=escape(files[b.dataset.preview])");
  ui=replace(ui,'new URL(raw,location.origin)','new URL(raw,location.href)');
- ui=replace(ui,'installNotes();',`$('#topicPoll').innerHTML='<h2>给小博土留言</h2><p>匿名留言、点赞、私人反馈和下一份资料建议，在原站提交并审核。</p><a class="btn" href="${origin}/resources#topicPoll">打开原站留言 ↗</a>';`);
- const ratingStart=ui.indexOf(" main.insertAdjacentHTML('beforeend',readerRating");
- const ratingEnd=ui.indexOf(' main.querySelectorAll',ratingStart);
- if(ratingStart<0||ratingEnd<0)throw Error('Missing rating section');
- ui=ui.slice(0,ratingStart)+` main.insertAdjacentHTML('beforeend','<section class="panel"><h2>资料评价</h2><a class="btn" href="${origin}/resources/'+enc(id)+'#rateForm">前往原站评价 ↗</a></section>');\n`+ui.slice(ratingEnd);
+ ui=replace(ui,"readerRating(v,ratings)+fallbackLink()","readerRating(v,[])+fallbackLink()");
+ ui=replace(ui,"row.n+' 条评分':'还没有评分'","row.n+' 条评分':'正在读取评分…'");
+ ui=replace(ui,"main.querySelectorAll('[data-preview]')",`const summary=$('#rateForm').previousElementSibling;
+  api('/api/ratings?resource='+enc(id)).then(data=>{
+   const row=data.ratings.find(x=>x.vid===v.id);
+   summary.textContent=v.label+' · '+(row?row.avg+' / 5 分，共 '+row.n+' 条评分':'还没有评分');
+  }).catch(()=>{summary.textContent='暂时无法读取评分，可刷新重试。'});
+  main.querySelectorAll('[data-preview]')`);
  ui=ui.replaceAll('location.origin+path','location.href.split("#")[0]');
  ui=replace(ui,"if(!settings.publicOrigin || new URL(settings.publicOrigin).origin!==location.origin) return '';","if(location.hostname!=='2624177099-prog.github.io') return '';");
  ui=replace(ui,'src="/qr?path=\'+enc(path)+\'','src="\'+qrImage(location.href.split("#")[0])+\'');

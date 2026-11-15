@@ -26,8 +26,30 @@ function qr(e,path){
  const n=q.getModuleCount(),dots=[];for(let y=0;y<n;y++)for(let x=0;x<n;x++)if(q.isDark(y,x))dots.push('M'+(x+4)+' '+(y+4)+'h1v1h-1z');
  return response('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+(n+8)+' '+(n+8)+'" shape-rendering="crispEdges"><rect width="100%" height="100%" fill="white"/><path d="'+dots.join('')+'"/></svg>','image/svg+xml');
 }
+const pagesOrigin='https://2624177099-prog.github.io';
+async function pagesCommunity(req,e,url){
+ const headers={'Access-Control-Allow-Origin':pagesOrigin,'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Content-Type','Vary':'Origin'};
+ const path=url.pathname;
+ try {
+  if(req.method==='OPTIONS')return new Response(null,{status:204,headers});
+  let result;
+  if(req.method==='GET'&&path==='/api/notes')result=await noteList(e,url,false);
+  else if(req.method==='GET'&&path==='/api/ratings'){
+   const id=url.searchParams.get('resource');
+   const r=await one(e,"SELECT id FROM resource WHERE id=? AND status='published' AND saleCents=0",id);
+   if(!r)fail(404,'资料不可用。');
+   result={ratings:(await communityDetail(e,id)).ratings};
+  }else if(req.method==='POST'&&['/api/notes','/api/like','/api/rate'].includes(path)){
+   await rate(e,req,path,path==='/api/like'?100:path==='/api/rate'?24:16);
+   const b=await readBody(req,false);
+   result=path==='/api/rate'?await communityPost(e,path,b):await postNote(e,req,path,b);
+  }else fail(405,'不支持此操作。');
+  return response(JSON.stringify(result),'application/json',200,headers);
+ }catch(err){return response(JSON.stringify({error:err.status?err.message:'互动服务暂时不可用，请稍后重试。'}),'application/json',err.status||503,headers);}
+}
 export default {async fetch(req,e,ctx){
  const url=new URL(req.url),p=url.pathname.replace(/\/$/,'')||'/',admin=canAdmin(req,e);
+ if(req.headers.get('origin')===pagesOrigin&&['/api/notes','/api/like','/api/rate','/api/ratings'].includes(p))return pagesCommunity(req,e,url);
  try{
   if(p==='/ui.js'&&req.method==='GET')return response(CLIENT,'text/javascript; charset=utf-8');
   if(p==='/qr'&&req.method==='GET')return qr(e,url.searchParams.get('path'));

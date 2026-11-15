@@ -1257,10 +1257,18 @@ function choice(label,name,values,current){return '<label class="field"><span>'+
 function msg(form,text){let node=$('[role=status]',form);if(node)node.textContent=text;}
 function statusBox(){return '<p class="form-status" role="status"></p>';}
 async function api(url, opt={}){
-  if(!opt.method){const data=await snapshot; if(url==="/api/catalog")return data.catalog; if(url.startsWith("/api/resource/") && data.details[url.slice(14)])return data.details[url.slice(14)];} throw Object.assign(Error("此资料当前不可用。"),{status:404}); /* const res=await fetch(url,{cache:'no-store',...opt});let data;
+  if(url==='/api/catalog')return (await snapshot).catalog;
+  if(url.startsWith('/api/resource/')){
+   const detail=(await snapshot).details[url.slice(14)];
+   if(!detail)throw Object.assign(Error('资料不可用。'),{status:404});
+   return detail;
+  }
+  if(!/^\/api\/(notes|like|rate|ratings)([?]|$)/.test(url))throw Error('该功能需要前往管理后台。');
+  let res;
+  try{res=await fetch('https://xiaobotu-study-library.gx2jwkwhpv.chatgpt.site'+url,{cache:'no-store',credentials:'omit',signal:AbortSignal.timeout(12000),...opt});}catch{throw Error('暂时连不上互动服务，请稍后重试。')}let data;
   try{data=await res.json();}catch{throw Error('暂时无法读取服务器响应，请重试。');}
   if(!res.ok)throw Object.assign(Error(data.error||'请求失败，请重试。'),{status:res.status});
-  return data; */
+  return data;
 }
 const post=(u,data)=>api(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
 const iconSearch='<svg aria-hidden="true" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>';
@@ -1284,7 +1292,7 @@ function catalogHome(){
  const filter=(label,key,values)=>'<label class="filter-control"><span>'+label+'</span><select name="'+key+'" aria-label="'+label+'"><option value="">全部'+label+'</option>'+options(values,qs.get(key))+'</select></label>';
  document.title='期末资料库 · 小博土';
  main.innerHTML='<section class="hero"><div class="hero-copy"><div class="kicker">学习资料 <span>/</span> STUDY LIBRARY</div><h1>期末资料库</h1><p>'+escape(settings.intro||'小博土整理的复习讲义、章节练习与模拟卷。按科目查找，查看版本后免费下载。')+'</p><div class="hero-note"><span class="dot"></span> 当前公开资料免费 <span>·</span> 自愿支持</div><a class="guest-jump" href="#topicPoll">给小博土留言 ↗</a></div>'+$('#hero-art').innerHTML+'</section>'+(settings.announcement?'<p class="notice">'+escape(settings.announcement)+'</p>':'')+'<section id="library"><div class="section-head"><div><div class="kicker">RESOURCE INDEX</div><h2>资料目录</h2></div><span class="count" id="total"></span></div><form id="filterForm" class="toolbar"><label class="search">'+iconSearch+'<input type="search" name="q" aria-label="搜索资料" placeholder="搜索标题、科目、标签或简介" value="'+escape(qs.get('q'))+'"></label><div class="filterbar filters">'+filter('科目','subject',facet('subject'))+filter('学年','year',facet('year'))+filter('类型','kind',facet('kind'))+filter('格式','formats',facet('formats'))+'<button class="text-btn" type="reset">清除筛选</button></div></form><div class="list-caption"><span>最近更新</span><span id="lastUpdate"></span></div><div id="results"></div></section><div class="guide"><div><strong>有资料想分享？</strong><p>上传你的复习笔记，审核后收录到资料库。</p></div><a class="btn" href="https://xiaobotu-study-library.gx2jwkwhpv.chatgpt.site/resources/submit">提交资料 ↗</a></div>';
- main.insertAdjacentHTML('beforeend','<section class="panel" id="topicPoll"></section>'+fallbackLink());$('#topicPoll').innerHTML='<h2>给小博土留言</h2><p>匿名留言、点赞、私人反馈和下一份资料建议，在原站提交并审核。</p><a class="btn" href="https://xiaobotu-study-library.gx2jwkwhpv.chatgpt.site/resources#topicPoll">打开原站留言 ↗</a>';
+ main.insertAdjacentHTML('beforeend','<section class="panel" id="topicPoll"></section>'+fallbackLink());installNotes();
  const form=$('#filterForm');
  function refresh(update=false){
   if(update){
@@ -1326,8 +1334,13 @@ async function detail(id){
  const notice=String(r.tags).includes('2024级整理')?'<p class="notice"><strong>资料使用说明</strong> '+archiveNotice+'</p>':'';
  main.innerHTML=lead(r.title,r.summary||'')+notice+'<div class="detail-layout stack"><section class="panel"><div class="section-head"><h2>适用范围</h2><span class="tag">'+escape(v.label)+'</span></div>'+info([['科目',r.subject],['学年',r.year],['年级',r.grade],['教材与版本',r.textbook||'未填写'],['资料类型',r.kind],['公开署名',r.author||'匿名'],['上传日期',formatDate(r.created)],['更新日期',formatDate(r.updated)]])+(oldYear?'<p class="notice">往年资料，请结合本学期教材、授课内容和考试要求使用。</p>':'')+'</section><section class="panel"><h2>制作与核对说明</h2>'+info([['内容来源',v.source||'未说明'],['AI 参与方式',v.ai||'未说明'],['人工核对',v.checkStatus||'待说明'],['核对范围与依据',v.scope||'未说明'],['核对日期',v.checked||'未填写']])+(v.issues?'<p class="notice"><strong>已知问题</strong> '+escape(v.issues)+'</p>':'')+'</section><section class="panel"><h2>预览与免费下载</h2>'+notice+'<div class="stack">'+((v.files||[]).filter(f=>Number(f.enabled)!==0).map(f=>fileRow(f)).join('')||'<p>此版本附件已停用。</p>')+'</div><div id="viewer"></div><p class="muted">手机内置浏览器无法保存时，可用右上角菜单选择“在浏览器打开”，再点下载。</p></section>'+support()+'<section class="panel"><h2>修订记录</h2>'+versions.map(k=>'<div class="admin-row"><strong>'+escape(k.label)+'</strong> <small>'+escape(formatDate(k.created))+'</small><p>'+escape(k.revision||'未填写修订摘要')+'</p>'+(k!==v&&Number(k.oldAllowed)?(k.files||[]).filter(f=>Number(f.enabled)!==0).map(f=>fileRow(f,false)).join(''):'')+'</div>').join('')+'</section>'+shareBlock()+'<div class="guide"><div><strong>发现题目或答案有误？</strong><p>注明页码、题号或章节，反馈会关联当前版本。</p></div><a class="btn" href="https://xiaobotu-study-library.gx2jwkwhpv.chatgpt.site/resources/feedback?id='+enc(r.id)+'&version='+enc(v.id)+'">提交反馈 ↗</a></div></div>';
  $('#viewer').closest('section').insertAdjacentHTML('beforebegin',publicCorrections(errata));
- main.insertAdjacentHTML('beforeend','<section class="panel"><h2>资料评价</h2><a class="btn" href="https://xiaobotu-study-library.gx2jwkwhpv.chatgpt.site/resources/'+enc(id)+'#rateForm">前往原站评价 ↗</a></section>');
- main.querySelectorAll('[data-preview]').forEach(b=>b.onclick=()=>{const u=escape(files[b.dataset.preview]);const viewer=$('#viewer');viewer.innerHTML='<div class="actions"><a class="btn" href="'+u+'" target="_blank" rel="noopener">独立打开 ↗</a>'+btn('关闭预览','id="closePreview"')+'</div>'+(b.dataset.ext==='pdf'?'<iframe title="PDF 资料预览" loading="lazy" style="width:100%;height:68vh;border:0" src="'+u+'"></iframe>':'<a href="'+u+'" target="_blank" rel="noopener"><img style="max-width:100%" loading="lazy" alt="附件图片预览" src="'+u+'"></a>');$('#closePreview').onclick=()=>{viewer.replaceChildren();b.focus();};viewer.scrollIntoView({block:'nearest'});});
+ main.insertAdjacentHTML('beforeend',readerRating(v,[])+fallbackLink());handleForm($('#rateForm'),async data=>{await post('/api/rate',{...data,vid:v.id,requestId:ballotKey(v.id)});await detail(id);msg($('#rateForm'),'评分已保存。');});
+ const summary=$('#rateForm').previousElementSibling;
+  api('/api/ratings?resource='+enc(id)).then(data=>{
+   const row=data.ratings.find(x=>x.vid===v.id);
+   summary.textContent=v.label+' · '+(row?row.avg+' / 5 分，共 '+row.n+' 条评分':'还没有评分');
+  }).catch(()=>{summary.textContent='暂时无法读取评分，可刷新重试。'});
+  main.querySelectorAll('[data-preview]').forEach(b=>b.onclick=()=>{const u=escape(files[b.dataset.preview]);const viewer=$('#viewer');viewer.innerHTML='<div class="actions"><a class="btn" href="'+u+'" target="_blank" rel="noopener">独立打开 ↗</a>'+btn('关闭预览','id="closePreview"')+'</div>'+(b.dataset.ext==='pdf'?'<iframe title="PDF 资料预览" loading="lazy" style="width:100%;height:68vh;border:0" src="'+u+'"></iframe>':'<a href="'+u+'" target="_blank" rel="noopener"><img style="max-width:100%" loading="lazy" alt="附件图片预览" src="'+u+'"></a>');$('#closePreview').onclick=()=>{viewer.replaceChildren();b.focus();};viewer.scrollIntoView({block:'nearest'});});
  attachShare();
 }
 function about(){
@@ -1463,14 +1476,15 @@ function noteForm(kind,label,placeholder){
 }
 function installNotes(){
  const node=$('#topicPoll');
- node.innerHTML='<h2>给小博土留言</h2><p class="muted">只写你想说的话。公开留言审核后展示，已核实的打赏留言优先。</p>'+noteForm('comment','公开留言','这份资料帮到了你吗？网站哪里还可以改？')+'<div id="readerNotes"></div><div class="note-grid"><section><h3>下一份想看什么？</h3>'+noteForm('topic','给小博土的选题建议','写下科目、章节，或最想弄懂的一道题')+'</section><section><h3>匿名反馈</h3>'+noteForm('feedback','仅小博土可见','遇到的问题，或想私下说的话')+'</section></div>';
+ node.innerHTML='<h2>给小博土留言</h2><p class="muted">只写你想说的话。公开留言提交后立即展示，已核实的打赏留言优先。</p>'+noteForm('comment','公开留言','这份资料帮到了你吗？网站哪里还可以改？')+'<div id="readerNotes"></div><div class="note-grid"><section><h3>下一份想看什么？</h3>'+noteForm('topic','给小博土的选题建议','写下科目、章节，或最想弄懂的一道题')+'</section><section><h3>匿名反馈</h3>'+noteForm('feedback','仅小博土可见','遇到的问题，或想私下说的话')+'</section></div>';
  for(const form of node.querySelectorAll('.note-form')){
   let requestId=crypto.randomUUID();
   form.oninput=()=>{requestId=crypto.randomUUID();};
   handleForm(form,async data=>{
    const kind=form.dataset.kind,result=await post('/api/notes',{kind,body:data.body,requestId});
    form.reset();requestId=crypto.randomUUID();
-   return kind==='comment'?'已收到，审核后公开。若想让此条留言显示打赏金额，可在打赏备注写下编号 '+result.receipt+'，或凭此编号私下联系小博土核对。':'已送达，仅小博土可见。';
+   if(kind==='comment'){page=0;await loadNotes();}
+   return kind==='comment'?'留言已公开。若想让此条留言显示打赏金额，可在打赏备注写下编号 '+result.receipt+'，或凭此编号私下联系小博土核对。':'已送达，仅小博土可见。';
   });
  }
  let page=0;
@@ -1488,7 +1502,7 @@ function installNotes(){
 async function noteAdmin(head){
  const kind=qs.get('kind')||'comment',offset=Math.max(0,Number(qs.get('offset'))||0),result=await api('/api/admin/notes?kind='+enc(kind)+'&offset='+offset);
  const link=(k,n=0)=>'/admin?tab=notes&kind='+enc(k)+'&offset='+n;
- main.innerHTML=head+'<section class="panel"><h2>匿名来信</h2><nav class="actions">'+[['comment','公开留言审核'],['topic','选题建议'],['feedback','私密反馈']].map(([k,t])=>'<a class="btn" href="'+link(k)+'">'+t+'</a>').join('')+'</nav>'+result.items.map(n=>'<article class="reader-note"><small>'+formatDate(n.created)+'</small><p>'+escape(n.body)+'</p>'+(kind==='comment'?'<form class="stack" data-id="'+escape(n.id)+'"><small>打赏匹配编号 '+escape(n.receipt)+'</small><label class="field">公开状态<select name="visible"><option value="no">未公开</option><option value="yes"'+(n.visible?' selected':'')+'>公开</option></select></label>'+field('实际到账金额（元，零表示普通留言）','amount',(n.tip/100).toFixed(2),true,'number','min="0" max="999999.99" step="0.01"')+'<label><input name="verified" type="checkbox" value="yes"> 已逐笔核对收款记录、留言编号与金额</label>'+btn('保存','type="submit"')+statusBox()+'</form>':'')+'</article>').join('')+(result.items.length?'':'<p>暂未收到。</p>')+'<div class="actions">'+(offset?'<a href="'+link(kind,Math.max(0,offset-20))+'">上一页</a>':'')+(result.more?'<a href="'+link(kind,offset+20)+'">下一页</a>':'')+'</div></section>';
+ main.innerHTML=head+'<section class="panel"><h2>匿名来信</h2><nav class="actions">'+[['comment','公开留言管理'],['topic','选题建议'],['feedback','私密反馈']].map(([k,t])=>'<a class="btn" href="'+link(k)+'">'+t+'</a>').join('')+'</nav>'+result.items.map(n=>'<article class="reader-note"><small>'+formatDate(n.created)+'</small><p>'+escape(n.body)+'</p>'+(kind==='comment'?'<form class="stack" data-id="'+escape(n.id)+'"><small>打赏匹配编号 '+escape(n.receipt)+'</small><label class="field">公开状态<select name="visible"><option value="no">未公开</option><option value="yes"'+(n.visible?' selected':'')+'>公开</option></select></label>'+field('实际到账金额（元，零表示普通留言）','amount',(n.tip/100).toFixed(2),true,'number','min="0" max="999999.99" step="0.01"')+'<label><input name="verified" type="checkbox" value="yes"> 已逐笔核对收款记录、留言编号与金额</label>'+btn('保存','type="submit"')+statusBox()+'</form>':'')+'</article>').join('')+(result.items.length?'':'<p>暂未收到。</p>')+'<div class="actions">'+(offset?'<a href="'+link(kind,Math.max(0,offset-20))+'">上一页</a>':'')+(result.more?'<a href="'+link(kind,offset+20)+'">下一页</a>':'')+'</div></section>';
  for(const form of main.querySelectorAll('[data-id]'))handleForm(form,data=>post('/api/admin/note',{...data,id:form.dataset.id}).then(()=>undefined));
 }
 function publicCorrections(rows){
@@ -1496,7 +1510,7 @@ function publicCorrections(rows){
 }
 function readerRating(v,rows){
  const row=rows.find(x=>x.vid===v.id);
- return '<section class="panel"><h2>同学评价</h2><p>'+escape(v.label)+' · '+(row?row.avg+' / 5 分，共 '+row.n+' 条评分':'还没有评分')+'</p><form id="rateForm" class="stack"><label class="field"><span>这份资料对复习有帮助吗？</span><select name="score" required><option value="">请选择</option>'+['帮助很小','帮助较小','一般','有帮助','很有帮助'].map((s,i)=>'<option value="'+(i+1)+'">'+(i+1)+' 分 · '+s+'</option>').join('')+'</select></label><p class="muted">匿名读者评价，同一浏览器可更新评分。</p>'+btn('提交评分','type="submit"')+statusBox()+'</form></section>';
+ return '<section class="panel"><h2>同学评价</h2><p>'+escape(v.label)+' · '+(row?row.avg+' / 5 分，共 '+row.n+' 条评分':'正在读取评分…')+'</p><form id="rateForm" class="stack"><label class="field"><span>这份资料对复习有帮助吗？</span><select name="score" required><option value="">请选择</option>'+['帮助很小','帮助较小','一般','有帮助','很有帮助'].map((s,i)=>'<option value="'+(i+1)+'">'+(i+1)+' 分 · '+s+'</option>').join('')+'</select></label><p class="muted">匿名读者评价，同一浏览器可更新评分。</p>'+btn('提交评分','type="submit"')+statusBox()+'</form></section>';
 }
 function saleFields(){
  return '<label class="field"><span>投稿方式</span><select name="saleMode"><option value="free">免费分享</option><option value="paid">申请出售</option></select></label><div id="saleFields" hidden>'+field('拟售价（元）','price','',false,'number','min="0.01" step="0.01" max="99999.99"')+'<label class="check"><input type="checkbox" name="saleRights" value="yes"> 我拥有原创作品或已取得商业销售授权。</label><p>出售申请请填写私人联系方式。管理员核对内容、来源和定价后答复。目前仅受理申请，尚未开放购买或结算。</p></div>';
