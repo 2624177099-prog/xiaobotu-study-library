@@ -1,0 +1,5 @@
+dist/
+.local-data/
+.dev.vars
+.env
+node_modules/
