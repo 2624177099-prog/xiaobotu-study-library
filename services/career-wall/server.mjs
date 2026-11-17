@@ -23,12 +23,14 @@ export async function handleWall(request,env) {
   try{
     const owner=await keyFrom(request);
     if(method==='GET'&&!id){
+      const kind=url.searchParams.get('kind')||'';
+      if(kind&&!Object.hasOwn(caps,kind))return json(400,{error:'留言分类无效。'});
       const raw=url.searchParams.get('before');
       if(raw!==null&&(!/^\d{1,16}$/.test(raw)||!Number.isSafeInteger(Number(raw))))return json(400,{error:'翻页参数无效。'});
       const page=await env.DB.prepare(`SELECT n.seq,n.id,n.kind,n.body,n.tag,n.created_at,n.updated_at,
         (n.owner_key=?) AS mine,(SELECT count(*) FROM wall_likes WHERE note_id=n.id) AS likes,
         EXISTS(SELECT 1 FROM wall_likes WHERE note_id=n.id AND visitor_key=?) AS liked
-        FROM wall_notes n WHERE n.seq<? ORDER BY n.seq DESC LIMIT 16`).bind(owner,owner,raw===null?Number.MAX_SAFE_INTEGER:Number(raw)).all();
+        FROM wall_notes n WHERE (?=\x27\x27 OR n.kind=?) AND n.seq<? ORDER BY n.seq DESC LIMIT 16`).bind(owner,owner,kind,kind,raw===null?Number.MAX_SAFE_INTEGER:Number(raw)).all();
       const items=page.results.slice(0,15);
       return json(200,{items,next:page.results.length>15?items.at(-1).seq:null});
     }
@@ -73,6 +75,7 @@ function prepared(sql,args=[]){const st=db.prepare(sql);return {bind(...v){retur
 const DB={prepare:prepared,async batch(list){db.exec('BEGIN');try{const r=[];for(const item of list)r.push(item.run());db.exec('COMMIT');return r}catch(e){db.exec('ROLLBACK');throw e}}};
 const port=Number(process.env.PORT||process.argv[process.argv.indexOf('--port')+1])||4173;
 http.createServer(async(req,res)=>{try{
+if(req.method==='GET'&&['/','/index.html','/careers/'].includes(req.url.split('?')[0])){res.setHeader('Content-Type','text/html; charset=utf-8');res.end(readFileSync(new URL('../../docs/careers/index.html',import.meta.url)));return;}
 if(req.headers.origin===siteOrigin){res.setHeader('Access-Control-Allow-Origin',siteOrigin);res.setHeader('Access-Control-Allow-Methods','GET, PUT, DELETE, OPTIONS');res.setHeader('Access-Control-Allow-Headers','Authorization, Content-Type');}
 if(req.method==='OPTIONS'){res.writeHead(req.headers.origin===siteOrigin?204:403);res.end();return;}
 const chunks=[];let size=0;for await(const c of req){size+=c.length;if(size>16384){res.writeHead(413);res.end();return}chunks.push(c);}
