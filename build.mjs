@@ -10,6 +10,16 @@ for(const [i,prefix] of ['Xigai','川北'].entries()){
  });
  seeds.push({resource:{id,title:['习概 · 逐章精讲与参考答案','习概 · 逐章单选与两套模拟卷'][i],subject:'习思想概论',year:'2026—2027',kind:['复习讲义','习题与模拟卷'][i],tags:['逐章精讲,材料分析','单项选择,模拟试卷'][i],summary:['导论与十七章逐章讲解，附核心背诵模块、材料分析参考答案及两套模拟卷。','按章节练习 244 道单选题，附 4 道材料分析训练、两套模拟卷及答案定位。'][i],author:'小博土',grade:'2024级临床医学',textbook:'《习近平新时代中国特色社会主义思想概论》，版次未填写',status:'published',current:vid,created:stamp,updated:stamp},version:{id:vid,rid:id,label,ai:'AI 辅助整理，具体参与环节待整理者补充',checkStatus:'核对范围待说明',scope:'尚未提供逐项人工核对记录。',checked:'',issues:['原录音未完成可靠逐字校对；教材印刷页码与 PDF 页序可能不同。模拟卷分值仅用于练习。','正式考试题型和分值尚未确认。请结合本学期授课要求使用。'][i],source:['据讲义自述，参考原彩色答案版、11月9日课堂答疑、教材扫描版及同学笔记。','据刷题册自述，参考逐章答案版、课堂答疑转写及相关笔记。'][i],revision:'首次收录原始 Word，并由同一文件转换 PDF 供在线阅读。',created:stamp,oldAllowed:0},files});
 }
+const practice=seeds.find(s=>s.resource.id==='xigai-practice');
+const updated='2026-11-17T02:51:00Z',versionId='xigai-practice-v3';
+const revision={
+ resource:{...practice.resource,current:versionId,updated,summary:'244 道单选题，含逐题详解、章节记忆法、4 道大题参考答案和两套模拟卷。'},
+ version:{...practice.version,id:versionId,label:'V3.0',created:updated,revision:'新增题后详解与章节记忆法，更新重点大题参考答案。PDF 由本次上传的 Word 转换。',source:'据本版文档说明，参考课堂答疑转写、相关笔记及原版题目。'},
+ files:fs.readdirSync('seed').filter(n=>n.endsWith('彩色V3.docx')||n.endsWith('彩色V3.pdf')).map(name=>{
+  const ext=name.split('.').pop(),id=versionId+'-'+ext,data=fs.readFileSync('seed/'+name);
+  return {id,vid:versionId,ext,name,size:data.length,enabled:1,obj:'revision/'+id,base64:data.toString('base64')};
+ })
+};
 const archive=JSON.parse(read('seed/archive24.json')).map(({id,subject,title,summary,file})=>{
  const data=fs.readFileSync('seed/archive24/'+file),ext=file.split('.').pop(),vid=id+'-initial',key=id+'-'+ext;
  const stamp='2026-11-13T00:00:00+08:00';
@@ -19,4 +29,4 @@ const modules=fs.readdirSync('vendor/qr').map(f=>JSON.stringify('./'+f.replace('
 const qr='const QRCode=(()=>{const modules={'+modules+'},cache={};function req(k){if(!cache[k]){const m={exports:{}};cache[k]=m;modules[k](m,m.exports,req)}return cache[k].exports}return req("./index")})();';
 const frame=src('frame.html').replace('{{STYLE}}',()=>src('style.css')).replace('{{ART}}',()=>src('art.html'));
 fs.mkdirSync('dist/server',{recursive:true});
-fs.writeFileSync('dist/server/index.js',[qr,'const WECHAT_IMAGE='+JSON.stringify(fs.readFileSync('seed/support/wechat.jpeg').toString('base64'))+';','const FRAME='+JSON.stringify(frame)+';', 'const CLIENT='+JSON.stringify(src('ui.js').replace('/* community UI */',()=>src('community-ui.js')))+';','const SEEDS='+JSON.stringify(seeds)+';','const ARCHIVE='+JSON.stringify(archive)+';',...['files.js','db.js','actions.js','maintenance.js','community.js','weekly.js','worker.js'].map(src)].join('\n'));
+fs.writeFileSync('dist/server/index.js',[qr,'const WECHAT_IMAGE='+JSON.stringify(fs.readFileSync('seed/support/wechat.jpeg').toString('base64'))+';','const FRAME='+JSON.stringify(frame)+';', 'const CLIENT='+JSON.stringify(src('ui.js').replace('/* community UI */',()=>src('community-ui.js')))+';','const SEEDS='+JSON.stringify(seeds)+';','const PRACTICE_V3='+JSON.stringify(revision)+';','const ARCHIVE='+JSON.stringify(archive)+';',...['files.js','db.js','actions.js','maintenance.js','community.js','weekly.js','worker.js'].map(src)].join('\n'));

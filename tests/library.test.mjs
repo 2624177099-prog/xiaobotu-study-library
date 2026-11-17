@@ -62,7 +62,7 @@ test('发布、私有审核、修订、撤回及重启持久化', async t => {
     for (const item of browse.items) {
       const bundle=await detail(item.id)
       for(const attachment of bundle.versions[0].files){
-        const prefix=item.id==='xigai-guide'?'Xigai':'川北'
+        const prefix=item.id==='xigai-guide'?'Xigai':'小博土_习概'
         const archive=JSON.parse(await readFile(new URL('archive24.json',seedDir),'utf8')).find(r=>r.id===item.id)
         const file=archive?archive.file:seedFiles.find(f=>f.startsWith(prefix)&&f.endsWith('.'+attachment.ext))
         assert.ok(file)

@@ -1,5 +1,5 @@
 {
-  "snapshot": "2026-11-15",
+  "snapshot": "2026-11-17",
   "timezone": "Asia/Shanghai",
   "resources": 14,
   "files": [
@@ -114,6 +114,20 @@
       "path": "files/pharm-questions-docx/药理简答题（6.4修改版）by小博土.docx",
       "bytes": 51893,
       "sha256": "e1cf279455c8b5cb9d0ccd96a0d9e97c9b91448b0f5588e23e1c8fc8a1fdc3cf"
+    },
+    {
+      "resource": "xigai-practice",
+      "version": "V3.0",
+      "path": "files/xigai-practice-v3-pdf/小博土_习概逐章刷题_题后详解与记忆法_彩色V3.pdf",
+      "bytes": 2229336,
+      "sha256": "50be114c600cb1d5fd660c00137f1d49d9c4d3ae7d28dd570e1e10bf47dce373"
+    },
+    {
+      "resource": "xigai-practice",
+      "version": "V3.0",
+      "path": "files/xigai-practice-v3-docx/小博土_习概逐章刷题_题后详解与记忆法_彩色V3.docx",
+      "bytes": 92389,
+      "sha256": "56e4ae524d28908f3847a7eafb3b6f689f723de5f02e9073181c2ee831a0bc80"
     }
   ]
 }
