@@ -1,4 +1,5 @@
 import http from 'node:http';
+import {timingSafeEqual} from 'node:crypto';
 import {DatabaseSync} from 'node:sqlite';
 import {mkdirSync,readFileSync} from 'node:fs';
 const siteOrigin='https://2624177099-prog.github.io';
@@ -73,10 +74,41 @@ export async function handleWall(request,env) {
 const dir=process.env.DATA_DIR||'./data';mkdirSync(dir,{recursive:true});const db=new DatabaseSync(dir+'/careers.sqlite');db.exec('PRAGMA journal_mode=WAL;PRAGMA foreign_keys=ON;');db.exec("CREATE TABLE IF NOT EXISTS wall_notes (\n  seq INTEGER PRIMARY KEY AUTOINCREMENT,\n  id TEXT NOT NULL UNIQUE,\n  owner_key TEXT NOT NULL,\n  kind TEXT NOT NULL CHECK (kind IN ('junior','future','feedback')),\n  body TEXT NOT NULL,\n  tag TEXT NOT NULL DEFAULT '',\n  created_at TEXT NOT NULL,\n  updated_at TEXT NOT NULL\n);\nCREATE TABLE IF NOT EXISTS wall_likes (\n  note_id TEXT NOT NULL REFERENCES wall_notes(id) ON DELETE CASCADE,\n  visitor_key TEXT NOT NULL,\n  PRIMARY KEY(note_id, visitor_key)\n);\n");
 function prepared(sql,args=[]){const st=db.prepare(sql);return {bind(...v){return prepared(sql,v)},async all(){return {results:st.all(...args)}},async first(){return st.get(...args)||null},run(){return {meta:st.run(...args)}}}}
 const DB={prepare:prepared,async batch(list){db.exec('BEGIN');try{const r=[];for(const item of list)r.push(item.run());db.exec('COMMIT');return r}catch(e){db.exec('ROLLBACK');throw e}}};
+
+db.exec('CREATE TABLE IF NOT EXISTS usage_events(session TEXT NOT NULL,event TEXT NOT NULL,created_at TEXT NOT NULL,PRIMARY KEY(session,event))');
+function adminAllowed(request){
+ const secret=process.env.ADMIN_PASSWORD||'';
+ const supplied=request.headers.get('Authorization')?.replace(/^Bearer /,'')||'';
+ return secret.length>=16&&Buffer.byteLength(secret)===Buffer.byteLength(supplied)&&timingSafeEqual(Buffer.from(secret),Buffer.from(supplied));
+}
+function snapshot(){
+ const usage=Object.fromEntries(db.prepare('SELECT event,count(*) AS total FROM usage_events GROUP BY event').all().map(r=>[r.event,r.total]));
+ return {usage,notes:db.prepare('SELECT count(*) AS total FROM wall_notes').get().total,likes:db.prepare('SELECT count(*) AS total FROM wall_likes').get().total};
+}
+async function routeRequest(request){
+ const url=new URL(request.url);
+ if(url.pathname.startsWith('/api/admin')){
+  if(!adminAllowed(request))return json(401,{error:'管理密码错误，或服务尚未配置至少 16 位的管理密码。'});
+  if(request.method==='GET'&&url.pathname==='/api/admin')return json(200,{...snapshot(),items:db.prepare('SELECT id,kind,body,tag,created_at FROM wall_notes ORDER BY seq DESC LIMIT 200').all()});
+  if(request.method==='GET'&&url.pathname==='/api/admin/export')return json(200,{...snapshot(),exported_at:new Date().toISOString(),items:db.prepare('SELECT id,kind,body,tag,created_at,updated_at FROM wall_notes ORDER BY seq DESC').all(),daily:db.prepare('SELECT substr(created_at,1,10) AS day,event,count(*) AS total FROM usage_events GROUP BY day,event ORDER BY day DESC').all()});
+  const id=url.pathname.slice('/api/admin/notes/'.length);
+  if(request.method==='DELETE'&&url.pathname.startsWith('/api/admin/notes/')&&validId.test(id)){db.prepare('DELETE FROM wall_notes WHERE id=?').run(id);return json(200,{removed:true})}
+  return json(404,{error:'没有找到该管理操作。'});
+ }
+ if(url.pathname==='/api/usage'){
+  if(request.method!=='POST')return json(405,{error:'请求方式无效'});
+  if(request.headers.get('Origin')&&![siteOrigin,url.origin].includes(request.headers.get('Origin')))return json(403,{error:'来源无效'});
+  let data;try{data=await request.json()}catch{return json(400,{error:'格式无效'})}
+  if(!validId.test(data?.session||'')||!['visit','start','complete'].includes(data?.event))return json(400,{error:'统计参数无效'});
+  db.prepare('INSERT OR IGNORE INTO usage_events(session,event,created_at) VALUES (?,?,?)').run(data.session,data.event,new Date().toISOString());return json(200,{recorded:true});
+ }
+ return handleWall(request,{DB});
+}
+
 const port=Number(process.env.PORT||process.argv[process.argv.indexOf('--port')+1])||4173;
 http.createServer(async(req,res)=>{try{
-if(req.method==='GET'&&['/','/index.html','/careers/'].includes(req.url.split('?')[0])){res.setHeader('Content-Type','text/html; charset=utf-8');res.end(readFileSync(new URL('../../docs/careers/index.html',import.meta.url)));return;}
-if(req.headers.origin===siteOrigin){res.setHeader('Access-Control-Allow-Origin',siteOrigin);res.setHeader('Access-Control-Allow-Methods','GET, PUT, DELETE, OPTIONS');res.setHeader('Access-Control-Allow-Headers','Authorization, Content-Type');}
+if(req.method==='GET'&&['/','/index.html','/careers/','/admin'].includes(req.url.split('?')[0])){res.setHeader('Content-Type','text/html; charset=utf-8');res.end(readFileSync(new URL('../../docs/careers/index.html',import.meta.url)));return;}
+if(req.headers.origin===siteOrigin){res.setHeader('Access-Control-Allow-Origin',siteOrigin);res.setHeader('Access-Control-Allow-Methods','GET, POST, PUT, DELETE, OPTIONS');res.setHeader('Access-Control-Allow-Headers','Authorization, Content-Type');}
 if(req.method==='OPTIONS'){res.writeHead(req.headers.origin===siteOrigin?204:403);res.end();return;}
 const chunks=[];let size=0;for await(const c of req){size+=c.length;if(size>16384){res.writeHead(413);res.end();return}chunks.push(c);}
-const out=await handleWall(new Request((req.headers['x-forwarded-proto']==='https'?'https://':'http://')+req.headers.host+req.url,{method:req.method,headers:req.headers,body:chunks.length?Buffer.concat(chunks):undefined}),{DB});res.writeHead(out.status,{...Object.fromEntries(out.headers),Vary:"Origin, Authorization"});res.end(Buffer.from(await out.arrayBuffer()))}catch{res.writeHead(500);res.end()}}).listen(port,'0.0.0.0');
+const out=await routeRequest(new Request((req.headers['x-forwarded-proto']==='https'?'https://':'http://')+req.headers.host+req.url,{method:req.method,headers:req.headers,body:chunks.length?Buffer.concat(chunks):undefined}));res.writeHead(out.status,{...Object.fromEntries(out.headers),Vary:"Origin, Authorization"});res.end(Buffer.from(await out.arrayBuffer()))}catch{res.writeHead(500);res.end()}}).listen(port,'0.0.0.0');
