@@ -1,0 +1,222 @@
+[
+  {
+    "resource": {
+      "id": "tcm-complete",
+      "title": "中医学 B · 逐章精讲与练习",
+      "subject": "中医学B",
+      "year": "2026—2027",
+      "kind": "复习讲义",
+      "tags": "2024级整理,本学期,小博土",
+      "summary": "十大模块精讲、章节练习、逐题解析与两套模拟卷。",
+      "author": "小博土",
+      "grade": "2024级临床医学",
+      "textbook": "人卫《中医学》第10版",
+      "status": "published",
+      "current": "tcm-complete-initial",
+      "created": "2026-11-23T05:00:00Z",
+      "updated": "2026-11-23T05:00:00Z"
+    },
+    "version": {
+      "id": "tcm-complete-initial",
+      "rid": "tcm-complete",
+      "label": "V1.0",
+      "ai": "AI 辅助整理，具体参与环节未逐项说明",
+      "checkStatus": "核对范围待说明",
+      "scope": "按提交文档保留制作与来源说明；未提供独立人工逐题核对记录。",
+      "checked": "",
+      "issues": "请结合本学期教材和老师通知使用。尚未取得完整期末范围；课堂与教材的个别口径差异详见正文。",
+      "source": "由小博土提供。文档自述参考人卫《中医学》第10版、课堂课件及教师课堂照片。",
+      "revision": "首次收录本次上传的 Word 原件。",
+      "created": "2026-11-23T05:00:00Z",
+      "oldAllowed": 0
+    },
+    "files": [
+      {
+        "id": "tcm-complete-docx",
+        "vid": "tcm-complete-initial",
+        "ext": "docx",
+        "name": "中医全面版by 小博土.docx",
+        "size": 3019399,
+        "obj": "nov23/tcm-complete-docx",
+        "enabled": 1
+      }
+    ],
+    "file": "中医全面版by 小博土.docx"
+  },
+  {
+    "resource": {
+      "id": "tcm-memory",
+      "title": "中医学 B · 考前背诵版",
+      "subject": "中医学B",
+      "year": "2026—2027",
+      "kind": "背诵资料",
+      "tags": "2024级整理,本学期,小博土",
+      "summary": "十大模块速背、易错辨析与十五道主观题分层答案。",
+      "author": "小博土",
+      "grade": "2024级临床医学",
+      "textbook": "人卫《中医学》第10版",
+      "status": "published",
+      "current": "tcm-memory-initial",
+      "created": "2026-11-23T05:00:00Z",
+      "updated": "2026-11-23T05:00:00Z"
+    },
+    "version": {
+      "id": "tcm-memory-initial",
+      "rid": "tcm-memory",
+      "label": "V2.0",
+      "ai": "AI 辅助整理，具体参与环节未逐项说明",
+      "checkStatus": "核对范围待说明",
+      "scope": "按提交文档保留制作与来源说明；未提供独立人工逐题核对记录。",
+      "checked": "",
+      "issues": "请结合本学期教材和老师通知使用。尚未取得完整期末范围；课堂与教材的个别口径差异详见正文。",
+      "source": "由小博土提供。文档自述参考人卫《中医学》第10版、课堂课件及教师课堂照片。",
+      "revision": "首次收录本次上传的 Word 原件。",
+      "created": "2026-11-23T05:00:00Z",
+      "oldAllowed": 0
+    },
+    "files": [
+      {
+        "id": "tcm-memory-docx",
+        "vid": "tcm-memory-initial",
+        "ext": "docx",
+        "name": "中医背诵版by小博土.docx",
+        "size": 112199,
+        "obj": "nov23/tcm-memory-docx",
+        "enabled": 1
+      }
+    ],
+    "file": "中医背诵版by小博土.docx"
+  },
+  {
+    "resource": {
+      "id": "statistics-complete",
+      "title": "医学统计学 · 全面学习与刷题",
+      "subject": "医学统计学",
+      "year": "2026—2027",
+      "kind": "复习讲义",
+      "tags": "2024级整理,本学期,小博土",
+      "summary": "逐章概念、公式适用条件、医学例题和章节练习详解。",
+      "author": "小博土",
+      "grade": "2024级临床医学",
+      "textbook": "未填写",
+      "status": "published",
+      "current": "statistics-complete-initial",
+      "created": "2026-11-23T05:00:00Z",
+      "updated": "2026-11-23T05:00:00Z"
+    },
+    "version": {
+      "id": "statistics-complete-initial",
+      "rid": "statistics-complete",
+      "label": "V1.0",
+      "ai": "AI 辅助整理，具体参与环节未逐项说明",
+      "checkStatus": "核对范围待说明",
+      "scope": "按提交文档保留制作与来源说明；未提供独立人工逐题核对记录。",
+      "checked": "",
+      "issues": "请结合本学期教材和老师通知使用。教材、旧题及学习通题库尚未全量核验，详见《医学统计学 · 来源与质量说明》。",
+      "source": "由小博土提供。文档自述参考课程大纲、推荐教材、历史试卷与学习通练习资料；具体清单和限制见配套质量报告。",
+      "revision": "首次收录本次上传的 Word 原件。",
+      "created": "2026-11-23T05:00:00Z",
+      "oldAllowed": 0
+    },
+    "files": [
+      {
+        "id": "statistics-complete-docx",
+        "vid": "statistics-complete-initial",
+        "ext": "docx",
+        "name": "医学统计全面版by小博土.docx",
+        "size": 81730,
+        "obj": "nov23/statistics-complete-docx",
+        "enabled": 1
+      }
+    ],
+    "file": "医学统计全面版by小博土.docx"
+  },
+  {
+    "resource": {
+      "id": "statistics-memory",
+      "title": "医学统计学 · 考前背诵版",
+      "subject": "医学统计学",
+      "year": "2026—2027",
+      "kind": "背诵资料",
+      "tags": "2024级整理,本学期,小博土",
+      "summary": "概念速背、公式与条件、高频易错点和闭卷自测。",
+      "author": "小博土",
+      "grade": "2024级临床医学",
+      "textbook": "未填写",
+      "status": "published",
+      "current": "statistics-memory-initial",
+      "created": "2026-11-23T05:00:00Z",
+      "updated": "2026-11-23T05:00:00Z"
+    },
+    "version": {
+      "id": "statistics-memory-initial",
+      "rid": "statistics-memory",
+      "label": "V1.0",
+      "ai": "AI 辅助整理，具体参与环节未逐项说明",
+      "checkStatus": "核对范围待说明",
+      "scope": "按提交文档保留制作与来源说明；未提供独立人工逐题核对记录。",
+      "checked": "",
+      "issues": "请结合本学期教材和老师通知使用。教材、旧题及学习通题库尚未全量核验，详见《医学统计学 · 来源与质量说明》。",
+      "source": "由小博土提供。文档自述参考课程大纲、推荐教材、历史试卷与学习通练习资料；具体清单和限制见配套质量报告。",
+      "revision": "首次收录本次上传的 Word 原件。",
+      "created": "2026-11-23T05:00:00Z",
+      "oldAllowed": 0
+    },
+    "files": [
+      {
+        "id": "statistics-memory-docx",
+        "vid": "statistics-memory-initial",
+        "ext": "docx",
+        "name": "医学统计学背诵版.docx",
+        "size": 63769,
+        "obj": "nov23/statistics-memory-docx",
+        "enabled": 1
+      }
+    ],
+    "file": "医学统计学背诵版.docx"
+  },
+  {
+    "resource": {
+      "id": "statistics-quality",
+      "title": "医学统计学 · 来源与质量说明",
+      "subject": "医学统计学",
+      "year": "2026—2027",
+      "kind": "制作说明",
+      "tags": "2024级整理,本学期,小博土",
+      "summary": "统计学双册的资料来源、已发现问题及尚未完成的核验范围。",
+      "author": "小博土",
+      "grade": "2024级临床医学",
+      "textbook": "未填写",
+      "status": "published",
+      "current": "statistics-quality-initial",
+      "created": "2026-11-23T05:00:00Z",
+      "updated": "2026-11-23T05:00:00Z"
+    },
+    "version": {
+      "id": "statistics-quality-initial",
+      "rid": "statistics-quality",
+      "label": "V1.0",
+      "ai": "AI 辅助整理，具体参与环节未逐项说明",
+      "checkStatus": "核对范围待说明",
+      "scope": "按提交文档保留制作与来源说明；未提供独立人工逐题核对记录。",
+      "checked": "",
+      "issues": "请结合本学期教材和老师通知使用。教材、旧题及学习通题库尚未全量核验，详见《医学统计学 · 来源与质量说明》。",
+      "source": "由小博土提供。文档自述参考课程大纲、推荐教材、历史试卷与学习通练习资料；具体清单和限制见配套质量报告。",
+      "revision": "首次收录本次上传的 Word 原件。",
+      "created": "2026-11-23T05:00:00Z",
+      "oldAllowed": 0
+    },
+    "files": [
+      {
+        "id": "statistics-quality-docx",
+        "vid": "statistics-quality-initial",
+        "ext": "docx",
+        "name": "医学统计学质量报告.docx",
+        "size": 41967,
+        "obj": "nov23/statistics-quality-docx",
+        "enabled": 1
+      }
+    ],
+    "file": "医学统计学质量报告.docx"
+  }
+]

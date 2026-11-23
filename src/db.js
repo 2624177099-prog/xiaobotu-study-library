@@ -39,13 +39,13 @@ async function detail(e,id,admin){
  return {resource,versions,...await communityDetail(e,id)};
 }
 async function seed(e){
- const done=new Set((await all(e,"SELECT key FROM settings WHERE key IN ('seed1','archive24','wechat20261114','practice-v3')")).map(r=>r.key));
+ const done=new Set((await all(e,"SELECT key FROM settings WHERE key IN ('seed1','archive24','wechat20261114','practice-v3','nov23')")).map(r=>r.key));
  if(!done.has('wechat20261114')){
   const obj='support/wechat-20261114.jpeg';
   await e.BUCKET.put(obj,Uint8Array.from(atob(WECHAT_IMAGE),c=>c.charCodeAt(0)));
   await e.DB.batch([query(e,"INSERT OR IGNORE INTO settings(key,value) SELECT '微信',? WHERE NOT EXISTS(SELECT 1 FROM settings WHERE key='wechat20261114')",obj),insert(e,'settings',{key:'wechat20261114',value:'complete'},true)]);
  }
- for(const [batchKey,items] of [['seed1',SEEDS],['archive24',ARCHIVE],['practice-v3',[PRACTICE_V3]]]){
+ for(const [batchKey,items] of [['seed1',SEEDS],['archive24',ARCHIVE],['practice-v3',[PRACTICE_V3]],['nov23',NOV23]]){
  if(done.has(batchKey))continue;
  const statements=[];
  for(const s of items){
