@@ -39,13 +39,13 @@ async function detail(e,id,admin){
  return {resource,versions,...await communityDetail(e,id)};
 }
 async function seed(e){
- const done=new Set((await all(e,"SELECT key FROM settings WHERE key IN ('seed1','archive24','wechat20261114','practice-v3','nov23')")).map(r=>r.key));
+ const done=new Set((await all(e,"SELECT key FROM settings WHERE key IN ('seed1','archive24','wechat20261114','practice-v3','nov23','nov24')")).map(r=>r.key));
  if(!done.has('wechat20261114')){
   const obj='support/wechat-20261114.jpeg';
   await e.BUCKET.put(obj,Uint8Array.from(atob(WECHAT_IMAGE),c=>c.charCodeAt(0)));
   await e.DB.batch([query(e,"INSERT OR IGNORE INTO settings(key,value) SELECT '微信',? WHERE NOT EXISTS(SELECT 1 FROM settings WHERE key='wechat20261114')",obj),insert(e,'settings',{key:'wechat20261114',value:'complete'},true)]);
  }
- for(const [batchKey,items] of [['seed1',SEEDS],['archive24',ARCHIVE],['practice-v3',[PRACTICE_V3]],['nov23',NOV23]]){
+ for(const [batchKey,items] of [['seed1',SEEDS],['archive24',ARCHIVE],['practice-v3',[PRACTICE_V3]],['nov23',NOV23],['nov24',NOV24]]){
  if(done.has(batchKey))continue;
  const statements=[];
  for(const s of items){
@@ -54,6 +54,7 @@ async function seed(e){
   statements.push(insert(e,'resource',s.resource,true),insert(e,'version',s.version,true));
   for(const {base64,...a} of s.files)statements.push(insert(e,'attachment',a,true));
  }
+ if(batchKey==='nov24')for(const item of items){const r=item.resource;statements.push(query(e,'UPDATE resource SET current=?,summary=?,title=?,updated=? WHERE id=? AND current=?',r.current,r.summary,r.title,r.updated,r.id,item.previous));}
  if(batchKey==='practice-v3'){const r=PRACTICE_V3.resource;statements.push(query(e,"UPDATE resource SET current=?,updated=?,summary=? WHERE id=? AND current='xigai-practice-first' AND NOT EXISTS(SELECT 1 FROM settings WHERE key='practice-v3')",r.current,r.updated,r.summary,r.id));}
  statements.push(insert(e,'settings',{key:batchKey,value:'complete'},true));await e.DB.batch(statements);
  }
